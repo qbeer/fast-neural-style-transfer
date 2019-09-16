@@ -1,1 +1,1 @@
-from .inference_network import InferenceNetwork
+from .model import StyleTransferModel

@@ -76,9 +76,10 @@ class InferenceNetwork(tf.keras.Model):
                                                   kernel_size=(3, 3),
                                                   padding='same',
                                                   activation='relu')
-        self.logits = tf.keras.layers.Conv2D(filters=self.n_classes,
-                                             kernel_size=(2, 2),
-                                             padding='same')
+        self.reco = tf.keras.layers.Conv2D(filters=self.n_classes,
+                                           kernel_size=(2, 2),
+                                           padding='same',
+                                           activation='tanh')  # scale to [0-1]
 
     def call(self, x):
         x = self.down_conv_1(x)
@@ -109,4 +110,4 @@ class InferenceNetwork(tf.keras.Model):
         x = tf.keras.layers.Concatenate()([x, x1])
         x = self.up_conv_1_1(x)
         x = tf.contrib.layers.instance_norm(x)
-        return self.logits(x)
+        return self.reco(x)
