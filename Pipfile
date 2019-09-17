@@ -9,6 +9,8 @@ yapf = "*"
 [packages]
 tensorflow-gpu = "==1.14"
 matplotlib = "*"
+pillow = "*"
+tensorflow-datasets = "*"
 
 [requires]
 python_version = "3.6"

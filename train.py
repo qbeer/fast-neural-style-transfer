@@ -6,15 +6,40 @@ import tensorflow as tf
 tf.enable_eager_execution()
 from tensorflow.keras.datasets.cifar10 import load_data
 
+import tensorflow_datasets as tfds
+
+dataset_builder = tfds.image.celebahq.CelebAHq(256)
+
 import matplotlib.pyplot as plt
 
 from src import ModelTrainer
 
-style_image = plt.imread('van_gogh.png')
-style_image = tf.Variable(style_image, name='style_image')
-style_image = tf.reshape(shape=(1, *tf.shape(style_image).numpy()))
-style_image = tf.image.resize_images(style_image, size=(64, 64))
+BUFFER_SIZE = 10_000
+BATCH_SIZE = 25
+INPUT_SHAPE = 64
 
-print(style_image.numpy().shape)
+style_image = plt.imread('starry_night.jpg')
+style_image = tf.Variable(style_image / 255., name='style_image')
+style_image = [style_image] * BATCH_SIZE
+style_image = tf.reshape(style_image,
+                         shape=(BATCH_SIZE, *tf.shape(style_image[0]).numpy()))
+style_image = tf.image.resize_images(style_image, size=(INPUT_SHAPE, INPUT_SHAPE))
 
-trainer = ModelTrainer(style_image, input_shape=(64, 64, 3), n_classes=3)
+trainer = ModelTrainer(style_image,
+                       input_shape=(INPUT_SHAPE, INPUT_SHAPE, 3),
+                       n_classes=3,
+                       batch_size=BATCH_SIZE)
+
+(train, train_labels), (test, test_labels) = load_data()
+
+# Resize
+train = tf.reshape(train, shape=(train.shape[0], 32, 32, 3))
+test = tf.reshape(test, shape=(test.shape[0], 32, 32, 3))
+
+train = tf.image.resize_images(train, size=(INPUT_SHAPE, INPUT_SHAPE))
+test = tf.image.resize_images(test, size=(INPUT_SHAPE, INPUT_SHAPE))
+
+train = tf.data.Dataset.from_tensor_slices(
+    train[:10_000] / 255.).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+
+trainer.train(train, lr=5e-3)

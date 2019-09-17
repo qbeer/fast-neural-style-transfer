@@ -76,10 +76,11 @@ class InferenceNetwork(tf.keras.Model):
                                                   kernel_size=(3, 3),
                                                   padding='same',
                                                   activation='relu')
-        self.reco = tf.keras.layers.Conv2D(filters=self.n_classes,
-                                           kernel_size=(2, 2),
-                                           padding='same',
-                                           activation='tanh')  # scale to [0-1]
+        self.reco = tf.keras.layers.Conv2D(
+            filters=self.n_classes,
+            kernel_size=(2, 2),
+            padding='same',
+            activation='sigmoid')  # scale to [0-1]
 
     def call(self, x):
         x = self.down_conv_1(x)
