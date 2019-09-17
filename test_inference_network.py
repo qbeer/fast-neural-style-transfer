@@ -23,11 +23,11 @@ test[test < .5] = 0
 test[test > .5] = 1
 
 # Resize
-train = tf.reshape(train, shape=(60_000, 28, 28, 1))
-test = tf.reshape(test, shape=(10_000, 28, 28, 1))
+train = tf.reshape(train, shape=(60000, 28, 28, 1))
+test = tf.reshape(test, shape=(10000, 28, 28, 1))
 
-train = tf.image.resize_images(train, size=(32, 32))
-test = tf.image.resize_images(test, size=(32, 32))
+train = tf.image.resize_images(train, size=(64, 64))
+test = tf.image.resize_images(test, size=(64, 64))
 
 
 def cross_entropy_loss(x, y):
@@ -41,18 +41,23 @@ def cross_entropy_loss(x, y):
 inference_net = InferenceNetwork(n_classes=1)
 inference_net.compile(tf.train.AdamOptimizer(1e-3), loss=cross_entropy_loss)
 
-inference_net.fit(x=train,
-                  y=train,
-                  batch_size=256,
+inference_net.fit(x=train[:3200],
+                  y=train[:3200],
+                  batch_size=32,
                   epochs=10,
                   verbose=1,
                   callbacks=[tensorboard_callback])
 
-test_predictions = inference_net.predict(test, batch_size=256, verbose=1)
+test_predictions = inference_net.predict(test[:16], batch_size=4, verbose=1)
 
 import matplotlib.pyplot as plt
 
-plt.imshow(test_predictions[0].reshape(32, 32), vmin=0, vmax=1, cmap='gray')
-plt.xticks([])
-plt.yticks([])
+fig, axes = plt.subplots(4, 4, sharex=True, sharey=True, figsize=(9, 9))
+for ind, ax in enumerate(axes.flatten()):
+    ax.imshow(test_predictions[ind].reshape(64, 64),
+              vmin=0,
+              vmax=1,
+              cmap='gray')
+    ax.set_xticks([])
+    ax.set_yticks([])
 plt.savefig('mnist_test_image.png', dpi=50)

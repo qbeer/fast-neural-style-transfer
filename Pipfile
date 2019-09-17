@@ -11,6 +11,7 @@ tensorflow-gpu = "==1.14"
 matplotlib = "*"
 pillow = "*"
 tensorflow-datasets = "*"
+h5py = "*"
 
 [requires]
 python_version = "3.6"

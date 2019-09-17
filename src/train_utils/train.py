@@ -37,9 +37,11 @@ class ModelTrainer:
             gram_style = self._gram_matrix(self.style_loss[loss_layer])
             gram_reco = self._gram_matrix(loss[loss_layer])
             gram_diff = gram_reco - gram_style
-            style_final_loss += 10. * tf.reduce_sum(gram_diff**2)  # frob-norm
+            style_final_loss += tf.reduce_sum(gram_diff**2)  # frob-norm
+        total_var_loss = 1e-5 * tf.reduce_sum(tf.image.total_variation(reco))
         print('Style : ', style_final_loss)
         print('Feature : ', feature_final_loss)
+        print('TV loss : ', total_var_loss)
         #return feature_final_loss + tf.reduce_sum(
         #    tf.square(reco - content_image))
         return style_final_loss + feature_final_loss
@@ -65,7 +67,7 @@ class ModelTrainer:
             zip(gradients,
                 self.transfer_model.inference_net.trainable_variables))
 
-    def train(self, images, lr=1e-2, epochs=10):
+    def train(self, images, lr=1e-2, epochs=1):
         opt = tf.train.AdamOptimizer(lr)
         for epoch in range(epochs):
             for ind, image_batch in enumerate(images):
@@ -84,3 +86,4 @@ class ModelTrainer:
                     plt.tight_layout()
                     plt.savefig("reco.png")
                     plt.close()
+        self.transfer_model.save_weights("model.h5")
