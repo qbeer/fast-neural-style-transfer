@@ -82,11 +82,9 @@ class InferenceNetwork(tf.keras.Model):
                                                            padding='valid',
                                                            activation='relu')
         # eg.: 129 x 129 x 32
-        self.reco = tf.keras.layers.Conv2D(
-            filters=self.n_classes,
-            kernel_size=(2, 2),
-            padding='valid',
-            activation='sigmoid')  # scale to [0-1]
+        self.reco = tf.keras.layers.Conv2D(filters=self.n_classes,
+                                           kernel_size=(2, 2),
+                                           padding='valid')
 
     def call(self, x):
         x = self.down_conv_1(x)
@@ -104,10 +102,8 @@ class InferenceNetwork(tf.keras.Model):
         x = self.bottom_conv1(x)
         x = tf.contrib.layers.instance_norm(x)
         x = self.bottom_conv2(x)
-        print('After bottom conv 2 : ', x.get_shape().as_list())
         x = tf.contrib.layers.instance_norm(x)
         x = self.upsample_3(x)
-        print('After upsampl 3 : ', x.get_shape().as_list())
         x = tf.keras.layers.Concatenate()([x, x3])
         x = self.up_conv_3_1(x)
         x = tf.contrib.layers.instance_norm(x)
@@ -118,8 +114,6 @@ class InferenceNetwork(tf.keras.Model):
         x = self.upsample_1(x)
         x = tf.keras.layers.Concatenate()([x, x1])
         x = self.up_conv_1_1(x)
-        print('After up conv 1_1 : ', x.get_shape().as_list())
         x = tf.contrib.layers.instance_norm(x)
         x = self.reco(x)
-        print('After reco : ', x.get_shape().as_list())
         return x

@@ -1,6 +1,7 @@
 from ..model import StyleTransferModel
 import tensorflow as tf
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class ModelTrainer:
@@ -11,48 +12,58 @@ class ModelTrainer:
                  n_classes=3):
         self.transfer_model = StyleTransferModel(input_shape=input_shape,
                                                  n_classes=n_classes)
-        self.style_loss = self.transfer_model.loss_net(style_image)
+        prep_style_image = tf.keras.applications.vgg16.preprocess_input(
+            style_image)
+        self.style_loss = self.transfer_model.loss_net(prep_style_image)
         self.batch_size = batch_size
 
     def _loss_fn(self, content_image, reco, loss):
-        content_loss = self.transfer_model.loss_net(content_image)
+        prep_content_image = tf.keras.applications.vgg16.preprocess_input(
+            content_image)
+        content_loss = self.transfer_model.loss_net(prep_content_image)
         """
-        block2_conv2   (1, 128, 128, 128) # for style and feature
-        block1_conv2   (1, 256, 256, 64)
-        block3_conv3   (1, 64, 64, 256)
-        block4_conv3   (1, 32, 32, 512)
+        block5_conv2   # for feature
+        block2_conv1   # for style
+        block1_conv1   # for style
+        block3_conv1   # for style
+        block4_conv1   # for style
         """
-        channels = tf.cast(tf.shape(content_loss['block2_conv2'])[-1],
+        channels = tf.cast(tf.shape(content_loss['block5_conv2'])[-1],
                            dtype=tf.int32)
-        area = tf.cast(tf.reduce_prod(tf.shape(content_loss['block2_conv2'])) /
+        area = tf.cast(tf.reduce_prod(tf.shape(content_loss['block5_conv2'])) /
                        (channels * self.batch_size),
                        dtype=tf.int32)
-        feature_final_loss = 1. / tf.cast(
+        feature_final_loss = 5e2 / tf.cast(
             area * channels * self.batch_size,
             dtype=tf.float32) * tf.reduce_sum(
-                tf.square(content_loss['block2_conv2'] - loss['block2_conv2']))
+                tf.square(content_loss['block5_conv2'] - loss['block5_conv2']))
 
         style_final_loss = tf.cast(0., dtype=tf.float32)
-        for loss_layer in list(loss.keys()):
+        for loss_layer in [
+                'block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1'
+        ]:
             gram_style = self._gram_matrix(self.style_loss[loss_layer])
             gram_reco = self._gram_matrix(loss[loss_layer])
             gram_diff = gram_reco - gram_style
-            style_final_loss += tf.reduce_sum(gram_diff**2)  # frob-norm
-        total_var_loss = 1e-5 * tf.reduce_sum(tf.image.total_variation(reco))
+            bs, height, width, channels = loss[loss_layer].get_shape().as_list(
+            )
+            style_final_loss += 1e-2 * 0.25 * tf.reduce_sum(gram_diff**
+                                                            2)  # frob-norm
+        total_var_loss = 1e-4 * tf.reduce_sum(tf.image.total_variation(reco))
         print('Style : ', style_final_loss)
         print('Feature : ', feature_final_loss)
         print('TV loss : ', total_var_loss)
-        #return feature_final_loss + tf.reduce_sum(
-        #    tf.square(reco - content_image))
-        return style_final_loss + feature_final_loss
+        #return feature_final_loss + total_var_loss
+        return style_final_loss + feature_final_loss + total_var_loss
 
     def _gram_matrix(self, tensor):
         bs, height, width, channels = tensor.get_shape().as_list()
         tensor = tf.reshape(tensor, [bs, channels, height * width])
         tensor_T = tf.reshape(tensor, [bs, height * width, channels])
-        return tf.matmul(tensor, tensor_T) / (channels * width * height * bs)
+        return tf.matmul(tensor,
+                         tensor_T) / (2 * channels * width * height * bs)
 
-    def _train_step(self, image_batch, opt):
+    def _train_step(self, image_batch):
         with tf.GradientTape() as inference_net_tape:
             reco, loss = self.transfer_model(image_batch)
             full_loss = self._loss_fn(image_batch, reco, loss)
@@ -63,27 +74,45 @@ class ModelTrainer:
         gradients = inference_net_tape.gradient(
             full_loss, self.transfer_model.inference_net.trainable_variables)
 
-        opt.apply_gradients(
+        self.opt.apply_gradients(
             zip(gradients,
                 self.transfer_model.inference_net.trainable_variables))
 
     def train(self, images, lr=1e-2, epochs=1):
-        opt = tf.train.AdamOptimizer(lr)
+        self.opt = tf.train.AdamOptimizer(lr, beta1=0.99, epsilon=.1)
         for epoch in range(epochs):
             for ind, image_batch in enumerate(images):
-                self._train_step(image_batch, opt)
-                if ind % 10 == 0:
-                    reco, loss = self.transfer_model(image_batch)
-                    plt.subplot('121')
-                    plt.imshow(reco[0])
-                    plt.xticks([])
-                    plt.yticks([])
-                    plt.tight_layout()
-                    plt.subplot('122')
-                    plt.imshow(image_batch[0])
-                    plt.xticks([])
-                    plt.yticks([])
-                    plt.tight_layout()
-                    plt.savefig("reco.png")
-                    plt.close()
+                self._train_step(image_batch)
+                self._save_fig(image_batch, ind)
         self.transfer_model.save_weights("model.h5")
+
+    def _save_fig(self, image_batch, ind):
+        if ind % 10 == 0:
+            reco, loss = self.transfer_model(image_batch)
+            plt.subplot('121')
+            plt.imshow(self._deprocess_input(reco[0]))
+            plt.xticks([])
+            plt.yticks([])
+            plt.subplot('122')
+            plt.imshow(image_batch[0] / 255.)
+            plt.xticks([])
+            plt.yticks([])
+            plt.tight_layout()
+            plt.savefig("reco.png")
+            plt.close()
+
+    def _deprocess_input(self, img):
+        """
+            From keras_applications `caffee` mode
+        """
+        img = img.numpy()
+        """
+            Channels last format
+        """
+        img[:, :, 0] += 103.939
+        img[:, :, 1] += 116.779
+        img[:, :, 2] += 123.68
+
+        img = img[:, :, ::-1]
+        img = np.clip(img, 0, 255).astype(int)
+        return img

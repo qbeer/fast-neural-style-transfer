@@ -6,28 +6,24 @@ from datetime import datetime
 
 import tensorflow as tf
 tf.enable_eager_execution()
-from tensorflow.keras.datasets.mnist import load_data
+from tensorflow.keras.datasets.cifar10 import load_data
 from tensorflow import keras
 
 from src import InferenceNetwork
+
+IMAGE_SIZE = 80
 
 logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=logdir)
 
 (train, train_labels), (test, test_labels) = load_data()
 
-# Binarize
-train[train < .5] = 0
-train[train > .5] = 1
-test[test < .5] = 0
-test[test > .5] = 1
-
 # Resize
-train = tf.reshape(train, shape=(60000, 28, 28, 1))
-test = tf.reshape(test, shape=(10000, 28, 28, 1))
+train = tf.reshape(train / 255., shape=(train.shape[0], 32, 32, 3))
+test = tf.reshape(test / 255., shape=(test.shape[0], 32, 32, 3))
 
-train = tf.image.resize_images(train, size=(64, 64))
-test = tf.image.resize_images(test, size=(64, 64))
+train = tf.image.resize_images(train, size=(IMAGE_SIZE, IMAGE_SIZE))
+test = tf.image.resize_images(test, size=(IMAGE_SIZE, IMAGE_SIZE))
 
 
 def cross_entropy_loss(x, y):
@@ -38,13 +34,17 @@ def cross_entropy_loss(x, y):
     return tf.losses.sigmoid_cross_entropy(multi_class_labels=x, logits=y)
 
 
-inference_net = InferenceNetwork(n_classes=1)
-inference_net.compile(tf.train.AdamOptimizer(1e-3), loss=cross_entropy_loss)
+def mse_loss(x, y):
+    return tf.losses.mean_squared_error(x, y)
 
-inference_net.fit(x=train[:3200],
-                  y=train[:3200],
+
+inference_net = InferenceNetwork(n_classes=3)
+inference_net.compile(tf.train.AdamOptimizer(1e-3), loss=mse_loss)
+
+inference_net.fit(x=train[:1600],
+                  y=train[:1600],
                   batch_size=32,
-                  epochs=10,
+                  epochs=5,
                   verbose=1,
                   callbacks=[tensorboard_callback])
 
@@ -54,10 +54,9 @@ import matplotlib.pyplot as plt
 
 fig, axes = plt.subplots(4, 4, sharex=True, sharey=True, figsize=(9, 9))
 for ind, ax in enumerate(axes.flatten()):
-    ax.imshow(test_predictions[ind].reshape(64, 64),
+    ax.imshow(test_predictions[ind].reshape(IMAGE_SIZE, IMAGE_SIZE, 3),
               vmin=0,
-              vmax=1,
-              cmap='gray')
+              vmax=1)
     ax.set_xticks([])
     ax.set_yticks([])
-plt.savefig('mnist_test_image.png', dpi=50)
+plt.savefig('cifar10_test_image.png', dpi=50)

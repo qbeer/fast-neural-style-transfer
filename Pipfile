@@ -12,6 +12,7 @@ matplotlib = "*"
 pillow = "*"
 tensorflow-datasets = "*"
 h5py = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.6"

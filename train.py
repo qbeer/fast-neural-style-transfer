@@ -11,11 +11,11 @@ import matplotlib.pyplot as plt
 from src import ModelTrainer
 
 BUFFER_SIZE = 50000
-BATCH_SIZE = 10
-INPUT_SHAPE = 64
+BATCH_SIZE = 4
+INPUT_SHAPE = 96
 
 style_image = plt.imread('starry_night.jpg')
-style_image = tf.Variable(style_image / 255., name='style_image')
+style_image = tf.Variable(style_image, name='style_image')
 style_image = [style_image] * BATCH_SIZE
 style_image = tf.reshape(style_image,
                          shape=(BATCH_SIZE, *tf.shape(style_image[0]).numpy()))
@@ -37,6 +37,6 @@ train = tf.image.resize_images(train, size=(INPUT_SHAPE, INPUT_SHAPE))
 test = tf.image.resize_images(test, size=(INPUT_SHAPE, INPUT_SHAPE))
 
 train = tf.data.Dataset.from_tensor_slices(
-    train / 255.).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+    train[:800]).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
-trainer.train(train, lr=5e-3, epochs=5)
+trainer.train(train, lr=1e-3, epochs=5)
