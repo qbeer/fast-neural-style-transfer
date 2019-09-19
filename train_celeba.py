@@ -15,7 +15,7 @@ from src import ModelTrainer
 BUFFER_SIZE = 50000
 BATCH_SIZE = 4
 WIDTH = 128
-HEIGHT = 96
+HEIGHT = 128
 
 style_image = plt.imread('starry_night.jpg')
 style_image = tf.Variable(style_image, name='style_image')
@@ -41,4 +41,4 @@ images = [resize_image(str(path)) for path in all_image_paths]
 train = tf.data.Dataset.from_tensor_slices(images).shuffle(BUFFER_SIZE).batch(
     BATCH_SIZE)
 
-trainer.train(train, lr=1e-3, epochs=10)
+trainer.train(train, lr=5e-4, epochs=100)

@@ -2,6 +2,9 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+
 import tensorflow as tf
 tf.enable_eager_execution()
 from tensorflow.keras.datasets.cifar10 import load_data

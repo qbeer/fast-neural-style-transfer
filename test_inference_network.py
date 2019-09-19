@@ -11,7 +11,7 @@ from tensorflow import keras
 
 from src import InferenceNetwork
 
-IMAGE_SIZE = 80
+IMAGE_SIZE = 128
 
 logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
 tensorboard_callback = keras.callbacks.TensorBoard(log_dir=logdir)
@@ -19,8 +19,8 @@ tensorboard_callback = keras.callbacks.TensorBoard(log_dir=logdir)
 (train, train_labels), (test, test_labels) = load_data()
 
 # Resize
-train = tf.reshape(train / 255., shape=(train.shape[0], 32, 32, 3))
-test = tf.reshape(test / 255., shape=(test.shape[0], 32, 32, 3))
+train = tf.reshape(train[:800] / 255., shape=(800, 32, 32, 3))
+test = tf.reshape(test[:16] / 255., shape=(16, 32, 32, 3))
 
 train = tf.image.resize_images(train, size=(IMAGE_SIZE, IMAGE_SIZE))
 test = tf.image.resize_images(test, size=(IMAGE_SIZE, IMAGE_SIZE))
@@ -41,14 +41,14 @@ def mse_loss(x, y):
 inference_net = InferenceNetwork(n_classes=3)
 inference_net.compile(tf.train.AdamOptimizer(1e-3), loss=mse_loss)
 
-inference_net.fit(x=train[:1600],
-                  y=train[:1600],
-                  batch_size=32,
+inference_net.fit(x=train,
+                  y=train,
+                  batch_size=2,
                   epochs=5,
                   verbose=1,
                   callbacks=[tensorboard_callback])
 
-test_predictions = inference_net.predict(test[:16], batch_size=4, verbose=1)
+test_predictions = inference_net.predict(test, batch_size=2, verbose=1)
 
 import matplotlib.pyplot as plt
 

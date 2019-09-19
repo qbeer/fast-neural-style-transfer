@@ -28,32 +28,29 @@ class ModelTrainer:
         block3_conv1   # for style
         block4_conv1   # for style
         """
-        channels = tf.cast(tf.shape(content_loss['block5_conv2'])[-1],
-                           dtype=tf.int32)
-        area = tf.cast(tf.reduce_prod(tf.shape(content_loss['block5_conv2'])) /
-                       (channels * self.batch_size),
-                       dtype=tf.int32)
-        feature_final_loss = 5e2 / tf.cast(
-            area * channels * self.batch_size,
+        bs, height, width, channels = content_loss['block5_conv2'].get_shape(
+        ).as_list()
+        feature_final_loss = 1e3 / tf.cast(
+            2 * height * width * channels * self.batch_size,
             dtype=tf.float32) * tf.reduce_sum(
                 tf.square(content_loss['block5_conv2'] - loss['block5_conv2']))
 
         style_final_loss = tf.cast(0., dtype=tf.float32)
         for loss_layer in [
-                'block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1'
+                'block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1',
+                'block5_conv1'
         ]:
             gram_style = self._gram_matrix(self.style_loss[loss_layer])
             gram_reco = self._gram_matrix(loss[loss_layer])
             gram_diff = gram_reco - gram_style
             bs, height, width, channels = loss[loss_layer].get_shape().as_list(
             )
-            style_final_loss += 1e-2 * 0.25 * tf.reduce_sum(gram_diff**
-                                                            2)  # frob-norm
+            style_final_loss += (1e-2 / 5) * tf.reduce_sum(gram_diff**
+                                                           2)  # frob-norm
         total_var_loss = 1e-4 * tf.reduce_sum(tf.image.total_variation(reco))
         print('Style : ', style_final_loss)
         print('Feature : ', feature_final_loss)
         print('TV loss : ', total_var_loss)
-        #return feature_final_loss + total_var_loss
         return style_final_loss + feature_final_loss + total_var_loss
 
     def _gram_matrix(self, tensor):
