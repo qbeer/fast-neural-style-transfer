@@ -143,6 +143,5 @@ class InferenceNetwork(tf.keras.Model):
             [x, x1, tf.pad(x_1, paddings, "CONSTANT")])
         x = self.up_conv_1_1(x)
         x = tf.contrib.layers.instance_norm(x)
-        print(x.get_shape().as_list())
         x = self.reco(x)
         return x

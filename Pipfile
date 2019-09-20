@@ -13,6 +13,7 @@ pillow = "*"
 tensorflow-datasets = "*"
 h5py = "*"
 numpy = "*"
+scikit-image = "*"
 
 [requires]
 python_version = "3.6"

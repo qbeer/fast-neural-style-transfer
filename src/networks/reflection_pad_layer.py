@@ -4,7 +4,7 @@ import tensorflow as tf
 class ReflectionPadding2D(tf.keras.layers.Layer):
     def __init__(self, padding=(1, 1), **kwargs):
         self.padding = padding
-        self.input_spec = [tf.layers.InputSpec(ndim=4)]
+        self.input_spec = [tf.keras.layers.InputSpec(ndim=4)]
         super(ReflectionPadding2D, self).__init__(**kwargs)
 
     def compute_output_shape(self, s):

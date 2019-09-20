@@ -16,6 +16,7 @@ class ModelTrainer:
         else:
             self.transfer_model = StyleTransferModel(input_shape=input_shape,
                                                      n_classes=n_classes)
+        self.transfer_model.loss_net.trainable = False
         prep_style_image = tf.keras.applications.vgg16.preprocess_input(
             style_image)
         self.style_loss = self.transfer_model.loss_net(prep_style_image)
@@ -26,41 +27,39 @@ class ModelTrainer:
             content_image)
         content_loss = self.transfer_model.loss_net(prep_content_image)
         """
-        block5_conv2   # for feature
-        block2_conv1   # for style
+        block5_conv2   # for style
+        block2_conv1   # for feature & style
         block1_conv1   # for style
         block3_conv1   # for style
         block4_conv1   # for style
+        block5_conv1   # for style
         """
-        bs, height, width, channels = content_loss['block5_conv2'].get_shape(
+        bs, height, width, channels = content_loss['block2_conv1'].get_shape(
         ).as_list()
-        feature_final_loss = 1e3 / tf.cast(
-            2 * height * width * channels * self.batch_size,
-            dtype=tf.float32) * tf.reduce_sum(
-                tf.square(content_loss['block5_conv2'] - loss['block5_conv2']))
+        feature_final_loss = 1e2 / tf.cast(
+            height * width * channels * bs, dtype=tf.float32) * tf.reduce_sum(
+                tf.square(content_loss['block2_conv1'] - loss['block2_conv1']))
 
         style_final_loss = tf.cast(0., dtype=tf.float32)
-        for loss_layer in [
-                'block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1',
-                'block5_conv1'
-        ]:
+        for loss_layer in list(loss.keys()):
             gram_style = self._gram_matrix(self.style_loss[loss_layer])
             gram_reco = self._gram_matrix(loss[loss_layer])
             gram_diff = gram_reco - gram_style
             bs, height, width, channels = loss[loss_layer].get_shape().as_list(
             )
-            style_final_loss += (1e-2 / 5) * tf.reduce_sum(gram_diff**
-                                                           2)  # frob-norm
-        total_var_loss = 1e-4 * tf.reduce_sum(tf.image.total_variation(reco))
-        print('Style : ', style_final_loss)
-        print('Feat. : ', feature_final_loss)
-        print('TV-l. : ', total_var_loss)
-        return style_final_loss + feature_final_loss + total_var_loss
+            style_final_loss += 1e-3 * tf.reduce_sum(gram_diff**2)  # frob-norm
+        total_var_loss = 1e-1 * tf.reduce_sum(tf.image.total_variation(reco))
+        self.style_loss_f.write("%.5f\n" % style_final_loss.numpy())
+        self.feature_loss_f.write("%.5f\n" % feature_final_loss.numpy())
+        self.total_variation_loss_f.write("%.5f\n" % total_var_loss.numpy())
+        total_loss = style_final_loss + feature_final_loss + total_var_loss
+        self.total_loss_f.write("%.5f\n" % total_loss.numpy())
+        return total_loss
 
     def _gram_matrix(self, tensor):
         bs, height, width, channels = tensor.get_shape().as_list()
-        tensor = tf.reshape(tensor, [bs, channels, height * width])
-        tensor_T = tf.reshape(tensor, [bs, height * width, channels])
+        tensor = tf.reshape(tensor, [-1, channels, height * width])
+        tensor_T = tf.reshape(tensor, [-1, height * width, channels])
         return tf.matmul(tensor,
                          tensor_T) / (2 * channels * width * height * bs)
 
@@ -68,9 +67,6 @@ class ModelTrainer:
         with tf.GradientTape() as inference_net_tape:
             reco, loss = self.transfer_model(image_batch)
             full_loss = self._loss_fn(image_batch, reco, loss)
-
-        print('Loss : ', full_loss)
-        print('\n')
 
         gradients = inference_net_tape.gradient(
             full_loss, self.transfer_model.inference_net.trainable_variables)
@@ -80,27 +76,69 @@ class ModelTrainer:
                 self.transfer_model.inference_net.trainable_variables))
 
     def train(self, images, lr=1e-2, epochs=1):
-        self.opt = tf.train.AdamOptimizer(lr)
+        self.opt = tf.train.RMSPropOptimizer(lr)
+
+        self.total_loss_f = open('total_loss.txt', "a+")
+        self.feature_loss_f = open('feature_loss.txt', "a+")
+        self.style_loss_f = open('style_loss.txt', "a+")
+        self.total_variation_loss_f = open('total_variation_loss.txt', "a+")
+
         for epoch in range(epochs):
             for ind, image_batch in enumerate(images):
                 self._train_step(image_batch)
-                self._save_fig(image_batch, ind)
+                if ind % 20 == 0:
+                    self._save_fig(image_batch)
+                    self._save_stats()
+                    # Re-open
+                    self.total_loss_f = open('total_loss.txt', "a+")
+                    self.feature_loss_f = open('feature_loss.txt', "a+")
+                    self.style_loss_f = open('style_loss.txt', "a+")
+                    self.total_variation_loss_f = open(
+                        'total_variation_loss.txt ', "a+")
+
         self.transfer_model.save_weights("model.h5")
 
-    def _save_fig(self, image_batch, ind):
-        if ind % 10 == 0:
-            reco, loss = self.transfer_model(image_batch)
-            plt.subplot('121')
-            plt.imshow(self._deprocess_input(reco[0]))
-            plt.xticks([])
-            plt.yticks([])
-            plt.subplot('122')
-            plt.imshow(image_batch[0] / 255.)
-            plt.xticks([])
-            plt.yticks([])
-            plt.tight_layout()
-            plt.savefig("reco.png")
-            plt.close()
+    def _save_fig(self, image_batch):
+        reco, _ = self.transfer_model(image_batch)
+        fig, axes = plt.subplots(2,
+                                 2,
+                                 sharex=True,
+                                 sharey=True,
+                                 figsize=(7, 7))
+
+        for ind, ax in enumerate(axes.flatten()):
+            ax.imshow(self._deprocess_input(reco[ind]), vmin=0, vmax=1)
+            ax.set_xticks([])
+            ax.set_yticks([])
+        plt.tight_layout()
+        plt.savefig('reco.png')
+        plt.close(fig)
+
+    def _save_stats(self):
+        self.total_loss_f.close()
+        self.feature_loss_f.close()
+        self.style_loss_f.close()
+        self.total_variation_loss_f.close()
+        total_loss = np.loadtxt('total_loss.txt', delimiter='\n')
+        feature_loss = np.loadtxt('feature_loss.txt', delimiter='\n')
+        style_loss = np.loadtxt('style_loss.txt', delimiter='\n')
+        TV_loss = np.loadtxt('total_variation_loss.txt', delimiter='\n')
+        fig = plt.figure(figsize=(12, 10))
+        plt.subplot('221')
+        plt.plot(total_loss, 'r--')
+        plt.title('Total loss')
+        plt.subplot('222')
+        plt.title('Feature loss')
+        plt.plot(feature_loss, 'b--')
+        plt.subplot(223)
+        plt.title('Style loss')
+        plt.plot(style_loss, 'g--')
+        plt.subplot(224)
+        plt.title('Style and feature losses')
+        plt.plot(style_loss, 'g--')
+        plt.plot(feature_loss, 'b--')
+        plt.savefig('loss.png')
+        plt.close(fig)
 
     def _deprocess_input(self, img):
         """
@@ -115,5 +153,5 @@ class ModelTrainer:
         img[:, :, 2] += 123.68
 
         img = img[:, :, ::-1]
-        img = np.clip(img, 0, 255).astype(int)
+        img = np.clip(img, 0, 255) / 255.
         return img
