@@ -1,4 +1,4 @@
-from ..model import StyleTransferModel
+from ..model import StyleTransferModel, ResidualStyleTransferModel
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,11 +7,15 @@ import numpy as np
 class ModelTrainer:
     def __init__(self,
                  style_image,
+                 residual=False,
                  batch_size=32,
                  input_shape=(256, 256, 3),
                  n_classes=3):
-        self.transfer_model = StyleTransferModel(input_shape=input_shape,
-                                                 n_classes=n_classes)
+        if residual:
+            self.transfer_model = ResidualStyleTransferModel()
+        else:
+            self.transfer_model = StyleTransferModel(input_shape=input_shape,
+                                                     n_classes=n_classes)
         prep_style_image = tf.keras.applications.vgg16.preprocess_input(
             style_image)
         self.style_loss = self.transfer_model.loss_net(prep_style_image)
@@ -49,8 +53,8 @@ class ModelTrainer:
                                                            2)  # frob-norm
         total_var_loss = 1e-4 * tf.reduce_sum(tf.image.total_variation(reco))
         print('Style : ', style_final_loss)
-        print('Feature : ', feature_final_loss)
-        print('TV loss : ', total_var_loss)
+        print('Feat. : ', feature_final_loss)
+        print('TV-l. : ', total_var_loss)
         return style_final_loss + feature_final_loss + total_var_loss
 
     def _gram_matrix(self, tensor):
@@ -76,7 +80,7 @@ class ModelTrainer:
                 self.transfer_model.inference_net.trainable_variables))
 
     def train(self, images, lr=1e-2, epochs=1):
-        self.opt = tf.train.AdamOptimizer(lr, beta1=0.99, epsilon=.1)
+        self.opt = tf.train.AdamOptimizer(lr)
         for epoch in range(epochs):
             for ind, image_batch in enumerate(images):
                 self._train_step(image_batch)

@@ -1,2 +1,3 @@
 from .inference_network import InferenceNetwork
 from .loss_network_vgg16 import LossNetwork
+from .original_inference_network import ResidualInferenceNetwork

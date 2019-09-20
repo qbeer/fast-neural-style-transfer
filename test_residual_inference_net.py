@@ -12,7 +12,7 @@ tf.enable_eager_execution()
 from tensorflow.keras.datasets.cifar10 import load_data
 from tensorflow import keras
 
-from src import InferenceNetwork
+from src import ResidualInferenceNetwork
 
 IMAGE_SIZE = 128
 
@@ -41,7 +41,7 @@ def mse_loss(x, y):
     return tf.losses.mean_squared_error(x, y)
 
 
-inference_net = InferenceNetwork(n_classes=3)
+inference_net = ResidualInferenceNetwork()
 inference_net.compile(tf.train.AdamOptimizer(1e-3), loss=mse_loss)
 
 inference_net.fit(x=train,

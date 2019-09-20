@@ -2,10 +2,12 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+
 import tensorflow as tf
 tf.enable_eager_execution()
 import pathlib
-import os
 import glob
 
 import matplotlib.pyplot as plt
@@ -25,6 +27,7 @@ style_image = tf.reshape(style_image,
 style_image = tf.image.resize_images(style_image, size=(WIDTH, HEIGHT))
 
 trainer = ModelTrainer(style_image,
+                       residual=True,
                        input_shape=(WIDTH, HEIGHT, 3),
                        n_classes=3,
                        batch_size=BATCH_SIZE)
@@ -41,4 +44,4 @@ images = [resize_image(str(path)) for path in all_image_paths]
 train = tf.data.Dataset.from_tensor_slices(images).shuffle(BUFFER_SIZE).batch(
     BATCH_SIZE)
 
-trainer.train(train, lr=5e-4, epochs=100)
+trainer.train(train, lr=1e-3, epochs=10)

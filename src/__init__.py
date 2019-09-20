@@ -1,3 +1,3 @@
-from .networks import InferenceNetwork, LossNetwork
-from .model import StyleTransferModel
+from .networks import InferenceNetwork, LossNetwork, ResidualInferenceNetwork
+from .model import StyleTransferModel, ResidualStyleTransferModel
 from .train_utils import ModelTrainer
