@@ -17,14 +17,17 @@ class ModelTrainer:
             self.transfer_model = StyleTransferModel(input_shape=input_shape,
                                                      n_classes=n_classes)
         self.transfer_model.loss_net.trainable = False
-        prep_style_image = tf.keras.applications.vgg16.preprocess_input(
+        self.prep_style_image = tf.keras.applications.vgg16.preprocess_input(
             style_image)
-        self.style_loss = self.transfer_model.loss_net(prep_style_image)
+        self.style_loss = self.transfer_model.loss_net(self.prep_style_image)
         self.batch_size = batch_size
 
     def _loss_fn(self, content_image, reco, loss):
         prep_content_image = tf.keras.applications.vgg16.preprocess_input(
             content_image)
+        print(np.min(prep_content_image), np.max(prep_content_image))
+        print(np.min(self.prep_style_image), np.max(self.prep_style_image))
+        print(np.min(reco), np.max(reco), '\n')
         content_loss = self.transfer_model.loss_net(prep_content_image)
         """
         block5_conv2   # for style
@@ -34,21 +37,28 @@ class ModelTrainer:
         block4_conv1   # for style
         block5_conv1   # for style
         """
-        bs, height, width, channels = content_loss['block2_conv1'].get_shape(
+        bs, height, width, channels = content_loss['block4_conv2'].get_shape(
         ).as_list()
-        feature_final_loss = 1e2 / tf.cast(
-            height * width * channels * bs, dtype=tf.float32) * tf.reduce_sum(
-                tf.square(content_loss['block2_conv1'] - loss['block2_conv1']))
+        feature_final_loss = 2e4 / tf.cast(
+            2 * height * width * channels * bs,
+            dtype=tf.float32) * tf.reduce_sum(
+                tf.square(
+                    tf.norm(content_loss['block4_conv2'] -
+                            loss['block4_conv2'])))
 
         style_final_loss = tf.cast(0., dtype=tf.float32)
-        for loss_layer in list(loss.keys()):
+        for loss_layer in [
+                'block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1',
+                'block5_conv1'
+        ]:
             gram_style = self._gram_matrix(self.style_loss[loss_layer])
             gram_reco = self._gram_matrix(loss[loss_layer])
             gram_diff = gram_reco - gram_style
             bs, height, width, channels = loss[loss_layer].get_shape().as_list(
             )
-            style_final_loss += 1e-3 * tf.reduce_sum(gram_diff**2)  # frob-norm
-        total_var_loss = 1e-1 * tf.reduce_sum(tf.image.total_variation(reco))
+            style_final_loss += 5e-2 * tf.reduce_sum(
+                tf.square(gram_diff))  # frob-norm
+        total_var_loss = 0 * tf.reduce_mean(tf.image.total_variation(reco))
         self.style_loss_f.write("%.5f\n" % style_final_loss.numpy())
         self.feature_loss_f.write("%.5f\n" % feature_final_loss.numpy())
         self.total_variation_loss_f.write("%.5f\n" % total_var_loss.numpy())
@@ -56,12 +66,13 @@ class ModelTrainer:
         self.total_loss_f.write("%.5f\n" % total_loss.numpy())
         return total_loss
 
-    def _gram_matrix(self, tensor):
-        bs, height, width, channels = tensor.get_shape().as_list()
-        tensor = tf.reshape(tensor, [-1, channels, height * width])
-        tensor_T = tf.reshape(tensor, [-1, height * width, channels])
-        return tf.matmul(tensor,
-                         tensor_T) / (2 * channels * width * height * bs)
+    def _gram_matrix(self, input_tensor):
+        result = tf.linalg.einsum('bijc,bijd->bcd', input_tensor, input_tensor)
+        input_shape = tf.shape(input_tensor)
+        num_locations = tf.cast(
+            2 * input_shape[1] * input_shape[2] * input_shape[0] *
+            input_shape[3], tf.float32)
+        return result / (num_locations)
 
     def _train_step(self, image_batch):
         with tf.GradientTape() as inference_net_tape:
@@ -76,7 +87,9 @@ class ModelTrainer:
                 self.transfer_model.inference_net.trainable_variables))
 
     def train(self, images, lr=1e-2, epochs=1):
-        self.opt = tf.train.RMSPropOptimizer(lr)
+        self.opt = tf.train.AdamOptimizer(learning_rate=lr,
+                                          beta1=0.99,
+                                          epsilon=1e-1)
 
         self.total_loss_f = open('total_loss.txt', "a+")
         self.feature_loss_f = open('feature_loss.txt', "a+")
@@ -126,6 +139,7 @@ class ModelTrainer:
         fig = plt.figure(figsize=(12, 10))
         plt.subplot('221')
         plt.plot(total_loss, 'r--')
+        #plt.plot(feature_loss + style_loss, 'b--', alpha=0.4)
         plt.title('Total loss')
         plt.subplot('222')
         plt.title('Feature loss')

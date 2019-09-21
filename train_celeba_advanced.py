@@ -56,7 +56,7 @@ def deprocess_input(img):
 
 
 def save_fig(recos):
-    fig, axes = plt.subplots(4, 4, sharex=True, sharey=True, figsize=(7, 5))
+    fig, axes = plt.subplots(4, 4, sharex=True, sharey=True, figsize=(7, 4))
     for ind, ax in enumerate(axes.flatten()):
         ax.imshow(deprocess_input(recos[ind].reshape(WIDTH, HEIGHT, 3)),
                   vmin=0,

@@ -1,5 +1,6 @@
 import tensorflow as tf
 from ..networks import LossNetwork, ResidualInferenceNetwork
+import numpy as np
 
 
 class ResidualStyleTransferModel(tf.keras.Model):

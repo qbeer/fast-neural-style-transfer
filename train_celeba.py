@@ -9,6 +9,7 @@ import tensorflow as tf
 tf.enable_eager_execution()
 import pathlib
 import glob
+import numpy as np
 
 import matplotlib.pyplot as plt
 
@@ -16,14 +17,15 @@ from src import ModelTrainer
 
 BUFFER_SIZE = 50000
 BATCH_SIZE = 4
-WIDTH = 96
-HEIGHT = 64
+WIDTH = 128
+HEIGHT = 128
 
 style_image = plt.imread('colorful_portrait.jpg')
 style_image = tf.Variable(style_image, name='style_image')
-style_image = style_image
 style_image = tf.expand_dims(style_image, 0)
 style_image = tf.image.resize_images(style_image, size=(WIDTH, HEIGHT))
+
+print(np.min(style_image), np.max(style_image))
 
 trainer = ModelTrainer(style_image,
                        residual=True,
@@ -33,7 +35,8 @@ trainer = ModelTrainer(style_image,
 
 
 def resize_image(img_path):
-    img = tf.Variable(plt.imread(img_path))
+    img = plt.imread(img_path)
+    img = tf.Variable(img, dtype=tf.float32)
     return tf.image.resize(img, [WIDTH, HEIGHT])
 
 

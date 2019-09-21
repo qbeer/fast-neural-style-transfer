@@ -8,6 +8,7 @@ class LossNetwork(tf.keras.Model):
             include_top=False, weights='imagenet', input_shape=input_shape)
         for layer in self.base_model.layers:
             layer.trainable = False
+            print(layer.name, layer.get_config(), '\n')
 
     def call(self, x):
         outputs = {
@@ -17,6 +18,7 @@ class LossNetwork(tf.keras.Model):
             "block3_conv1": None,  # style
             "block4_conv1": None,  # style
             "block5_conv1": None,  # style
+            "block4_conv2": None  # feature
         }
         for layer in self.base_model.layers:
             x = layer(x)
