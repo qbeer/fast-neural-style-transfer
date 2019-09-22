@@ -11,7 +11,7 @@ class ResidualStyleTransferModel(tf.keras.Model):
         self.loss_net.trainable = False
 
     def call(self, x):
-        x = tf.keras.applications.vgg16.preprocess_input(x)
-        reco = self.inference_net(x)
+        reco = self.inference_net(x / 255.)
+        reco = tf.keras.applications.vgg16.preprocess_input(reco)
         loss = self.loss_net(reco)
         return reco, loss

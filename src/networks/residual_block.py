@@ -13,4 +13,4 @@ class ResidualBlock(tf.keras.Model):
         _x = tf.contrib.layers.instance_norm(_x)
         _x = self.conv2(x)
         _x = tf.contrib.layers.instance_norm(_x)
-        return tf.keras.layers.Add()([_x, x])
+        return _x + x

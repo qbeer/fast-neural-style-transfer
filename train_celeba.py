@@ -17,15 +17,13 @@ from src import ModelTrainer
 
 BUFFER_SIZE = 50000
 BATCH_SIZE = 4
-WIDTH = 128
-HEIGHT = 128
+WIDTH = 64
+HEIGHT = 48
 
-style_image = plt.imread('colorful_portrait.jpg')
+style_image = plt.imread('starry_night.jpg')
 style_image = tf.Variable(style_image, name='style_image')
 style_image = tf.expand_dims(style_image, 0)
 style_image = tf.image.resize_images(style_image, size=(WIDTH, HEIGHT))
-
-print(np.min(style_image), np.max(style_image))
 
 trainer = ModelTrainer(style_image,
                        residual=True,

@@ -9,7 +9,7 @@ class OutputScale(tf.layers.Layer):
         pass
 
     def call(self, x):
-        return x * 150.
+        return (x + 1) * 255. / 2.
 
     def compute_output_shape(self, input_shape):
         return input_shape

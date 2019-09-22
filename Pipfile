@@ -14,6 +14,7 @@ tensorflow-datasets = "*"
 h5py = "*"
 numpy = "*"
 scikit-image = "*"
+tensorflow-probability = "*"
 
 [requires]
 python_version = "3.6"

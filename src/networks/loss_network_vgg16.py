@@ -18,7 +18,11 @@ class LossNetwork(tf.keras.Model):
             "block3_conv1": None,  # style
             "block4_conv1": None,  # style
             "block5_conv1": None,  # style
-            "block4_conv2": None  # feature
+            "block4_conv2": None,  # feature
+            'block1_conv2': None,
+            'block2_conv2': None,
+            'block3_conv3': None,
+            'block4_conv3': None
         }
         for layer in self.base_model.layers:
             x = layer(x)
