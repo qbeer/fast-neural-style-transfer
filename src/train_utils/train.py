@@ -51,9 +51,9 @@ class ModelTrainer:
         return content_final_loss
 
     def _loss_fn(self, content_image, reco, loss):
-        feature_final_loss = 10000. * self._content_loss(content_image, loss)
+        feature_final_loss = 1000. * self._content_loss(content_image, loss)
         style_final_loss = 0.1 * self._style_loss(loss)
-        total_var_loss = 1e-5 * tf.reduce_mean(tf.image.total_variation(reco))
+        total_var_loss = 1e-4 * tf.reduce_mean(tf.image.total_variation(reco))
         total_loss = style_final_loss + feature_final_loss + total_var_loss
 
         self.style_loss_f.write("%.5f\n" % style_final_loss.numpy())

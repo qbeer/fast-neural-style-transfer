@@ -13,12 +13,14 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from multiprocessing import Pool
+
 from src import ModelTrainer
 
-BUFFER_SIZE = 50000
+BUFFER_SIZE = 5000
 BATCH_SIZE = 4
-WIDTH = 64
-HEIGHT = 48
+WIDTH = 256
+HEIGHT = 168
 
 style_image = plt.imread('starry_night.jpg')
 style_image = tf.Variable(style_image, name='style_image')
@@ -31,17 +33,32 @@ trainer = ModelTrainer(style_image,
                        n_classes=3,
                        batch_size=BATCH_SIZE)
 
+raw_image_dataset = tf.data.TFRecordDataset('celeba.tfrecords')
 
-def resize_image(img_path):
-    img = plt.imread(img_path)
-    img = tf.Variable(img, dtype=tf.float32)
-    return tf.image.resize(img, [WIDTH, HEIGHT])
+image_feature_description = {
+    'height': tf.io.FixedLenFeature([], tf.int64),
+    'width': tf.io.FixedLenFeature([], tf.int64),
+    'image': tf.io.FixedLenFeature([], tf.string),
+}
 
 
-all_image_paths = list(glob.glob("/home/qbeer666/celeba_small/*"))
-images = [resize_image(str(path)) for path in all_image_paths]
+def _parse_image_function(example_proto):
+    return tf.io.parse_single_example(example_proto, image_feature_description)
 
-train = tf.data.Dataset.from_tensor_slices(images).shuffle(BUFFER_SIZE).batch(
-    BATCH_SIZE)
 
-trainer.train(train, lr=1e-3, epochs=25)
+def _resize_image_function(example_parsed):
+    image = tf.image.decode_jpeg(example_parsed['image'])
+    image = tf.cast(image, tf.float32)
+    height = tf.cast(example_parsed['height'], tf.int32)
+    width = tf.cast(example_parsed['width'], tf.int32)
+
+    image = tf.reshape(image, [height, width, 3])
+    return tf.image.resize(image, size=(WIDTH, HEIGHT))
+
+
+parsed_image_dataset = raw_image_dataset.map(_parse_image_function)
+resized_image_dataset = parsed_image_dataset.map(_resize_image_function)
+
+train = resized_image_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+
+trainer.train(train, lr=1e-3, epochs=2)
