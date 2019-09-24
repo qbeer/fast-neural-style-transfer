@@ -5,7 +5,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import tensorflow as tf
 tf.enable_eager_execution()
 
-from src import ModelTrainer
+from ..src import ModelTrainer
 
 style_image = tf.random.normal(shape=(1, 256, 256, 3))
 

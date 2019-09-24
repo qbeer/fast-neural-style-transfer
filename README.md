@@ -5,11 +5,11 @@
 
 Current status :
 
-![reconstruction-via-style-transfer](./reco.png)
+<img src="./reco.png" height="500rm">
 
 From style image:
 
-![van-gogh-starry-night](./starry_night.jpg)
+<img src="./style_images/starry_night.jpg" height="300rm">
 
 To train the network with CIFAR-10:
 

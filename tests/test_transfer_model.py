@@ -5,7 +5,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import tensorflow as tf
 tf.enable_eager_execution()
 
-from src import StyleTransferModel
+from ..src import StyleTransferModel
 
 transfer_model = StyleTransferModel()
 

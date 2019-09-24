@@ -5,7 +5,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 import tensorflow as tf
 tf.enable_eager_execution()
 
-from src import LossNetwork
+from ..src import LossNetwork
 
 loss_net = LossNetwork()
 

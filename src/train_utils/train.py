@@ -51,7 +51,7 @@ class ModelTrainer:
         return content_final_loss
 
     def _loss_fn(self, content_image, reco, loss):
-        feature_final_loss = 1000. * self._content_loss(content_image, loss)
+        feature_final_loss = 400. * self._content_loss(content_image, loss)
         style_final_loss = 0.1 * self._style_loss(loss)
         total_var_loss = 1e-4 * tf.reduce_mean(tf.image.total_variation(reco))
         total_loss = style_final_loss + feature_final_loss + total_var_loss
@@ -85,10 +85,11 @@ class ModelTrainer:
     def train(self, images, lr=1e-2, epochs=1):
         self.opt = tf.train.AdamOptimizer(learning_rate=lr)
 
-        self.total_loss_f = open('total_loss.txt', "a+")
-        self.feature_loss_f = open('feature_loss.txt', "a+")
-        self.style_loss_f = open('style_loss.txt', "a+")
-        self.total_variation_loss_f = open('total_variation_loss.txt', "a+")
+        self.total_loss_f = open('./logs/total_loss.txt', "a+")
+        self.feature_loss_f = open('./logs/feature_loss.txt', "a+")
+        self.style_loss_f = open('./logs/style_loss.txt', "a+")
+        self.total_variation_loss_f = open('./logs/total_variation_loss.txt',
+                                           "a+")
 
         for epoch in range(epochs):
             for ind, image_batch in enumerate(images):
@@ -97,11 +98,11 @@ class ModelTrainer:
                     self._save_fig(image_batch)
                     self._save_stats()
                     # Re-open
-                    self.total_loss_f = open('total_loss.txt', "a+")
-                    self.feature_loss_f = open('feature_loss.txt', "a+")
-                    self.style_loss_f = open('style_loss.txt', "a+")
+                    self.total_loss_f = open('./logs/total_loss.txt', "a+")
+                    self.feature_loss_f = open('./logs/feature_loss.txt', "a+")
+                    self.style_loss_f = open('./logs/style_loss.txt', "a+")
                     self.total_variation_loss_f = open(
-                        'total_variation_loss.txt ', "a+")
+                        './logs/total_variation_loss.txt ', "a+")
 
         self.transfer_model.save_weights("model.h5")
 
@@ -126,10 +127,10 @@ class ModelTrainer:
         self.feature_loss_f.close()
         self.style_loss_f.close()
         self.total_variation_loss_f.close()
-        total_loss = np.loadtxt('total_loss.txt', delimiter='\n')
-        feature_loss = np.loadtxt('feature_loss.txt', delimiter='\n')
-        style_loss = np.loadtxt('style_loss.txt', delimiter='\n')
-        TV_loss = np.loadtxt('total_variation_loss.txt', delimiter='\n')
+        total_loss = np.loadtxt('./logs/total_loss.txt', delimiter='\n')
+        feature_loss = np.loadtxt('./logs/feature_loss.txt', delimiter='\n')
+        style_loss = np.loadtxt('./logs/style_loss.txt', delimiter='\n')
+        TV_loss = np.loadtxt('./logs/total_variation_loss.txt', delimiter='\n')
         fig = plt.figure(figsize=(12, 10))
         plt.subplot('221')
         plt.plot(total_loss, 'r--')
@@ -144,7 +145,7 @@ class ModelTrainer:
         plt.title('Style and feature losses')
         plt.plot(style_loss, 'g--')
         plt.plot(feature_loss, 'b--')
-        plt.savefig('loss.png')
+        plt.savefig('./logs/loss.png')
         plt.close(fig)
 
     def _deprocess_input(self, img):

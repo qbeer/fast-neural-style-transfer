@@ -7,39 +7,58 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 import tensorflow as tf
 tf.enable_eager_execution()
-from tensorflow.keras.datasets.cifar10 import load_data
+import pathlib
+import glob
+import numpy as np
 
 import matplotlib.pyplot as plt
 
+from multiprocessing import Pool
+
 from src import ModelTrainer
 
-BUFFER_SIZE = 50000
+BUFFER_SIZE = 5000
 BATCH_SIZE = 4
-INPUT_SHAPE = 96
+WIDTH = 256
+HEIGHT = 168
 
-style_image = plt.imread('starry_night.jpg')
+style_image = plt.imread('./style_images/van_gogh.jpg')
 style_image = tf.Variable(style_image, name='style_image')
-style_image = [style_image] * BATCH_SIZE
-style_image = tf.reshape(style_image,
-                         shape=(BATCH_SIZE, *tf.shape(style_image[0]).numpy()))
-style_image = tf.image.resize_images(style_image,
-                                     size=(INPUT_SHAPE, INPUT_SHAPE))
+style_image = tf.expand_dims(style_image, 0)
+style_image = tf.image.resize_images(style_image, size=(WIDTH, HEIGHT))
 
 trainer = ModelTrainer(style_image,
-                       input_shape=(INPUT_SHAPE, INPUT_SHAPE, 3),
+                       residual=True,
+                       input_shape=(WIDTH, HEIGHT, 3),
                        n_classes=3,
                        batch_size=BATCH_SIZE)
 
-(train, train_labels), (test, test_labels) = load_data()
+raw_image_dataset = tf.data.TFRecordDataset('celeba.tfrecords')
 
-# Resize
-train = tf.reshape(train, shape=(train.shape[0], 32, 32, 3))
-test = tf.reshape(test, shape=(test.shape[0], 32, 32, 3))
+image_feature_description = {
+    'height': tf.io.FixedLenFeature([], tf.int64),
+    'width': tf.io.FixedLenFeature([], tf.int64),
+    'image': tf.io.FixedLenFeature([], tf.string),
+}
 
-train = tf.image.resize_images(train, size=(INPUT_SHAPE, INPUT_SHAPE))
-test = tf.image.resize_images(test, size=(INPUT_SHAPE, INPUT_SHAPE))
 
-train = tf.data.Dataset.from_tensor_slices(
-    train[:800]).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+def _parse_image_function(example_proto):
+    return tf.io.parse_single_example(example_proto, image_feature_description)
 
-trainer.train(train, lr=1e-3, epochs=5)
+
+def _resize_image_function(example_parsed):
+    image = tf.image.decode_jpeg(example_parsed['image'])
+    image = tf.cast(image, tf.float32)
+    height = tf.cast(example_parsed['height'], tf.int32)
+    width = tf.cast(example_parsed['width'], tf.int32)
+
+    image = tf.reshape(image, [height, width, 3])
+    return tf.image.resize(image, size=(WIDTH, HEIGHT))
+
+
+parsed_image_dataset = raw_image_dataset.map(_parse_image_function)
+resized_image_dataset = parsed_image_dataset.map(_resize_image_function)
+
+train = resized_image_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+
+trainer.train(train, lr=1e-3, epochs=2)

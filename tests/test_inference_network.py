@@ -12,12 +12,9 @@ tf.enable_eager_execution()
 from tensorflow.keras.datasets.cifar10 import load_data
 from tensorflow import keras
 
-from src import ResidualInferenceNetwork
+from ..src import InferenceNetwork
 
 IMAGE_SIZE = 128
-
-logdir = "logs/scalars/" + datetime.now().strftime("%Y%m%d-%H%M%S")
-tensorboard_callback = keras.callbacks.TensorBoard(log_dir=logdir)
 
 (train, train_labels), (test, test_labels) = load_data()
 
@@ -41,15 +38,10 @@ def mse_loss(x, y):
     return tf.losses.mean_squared_error(x, y)
 
 
-inference_net = ResidualInferenceNetwork()
+inference_net = InferenceNetwork(n_classes=3)
 inference_net.compile(tf.train.AdamOptimizer(1e-3), loss=mse_loss)
 
-inference_net.fit(x=train,
-                  y=train,
-                  batch_size=2,
-                  epochs=5,
-                  verbose=1,
-                  callbacks=[tensorboard_callback])
+inference_net.fit(x=train, y=train, batch_size=2, epochs=5, verbose=1)
 
 test_predictions = inference_net.predict(test, batch_size=2, verbose=1)
 
@@ -62,4 +54,4 @@ for ind, ax in enumerate(axes.flatten()):
               vmax=1)
     ax.set_xticks([])
     ax.set_yticks([])
-plt.savefig('cifar10_test_image.png', dpi=50)
+plt.savefig('./tests/cifar10_test_image.png', dpi=50)
