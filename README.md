@@ -9,7 +9,7 @@ Current status :
 
 From style image:
 
-<img src="./style_images/starry_night.jpg" height="300rm">
+<img src="./style_images/van_gogh.jpg" height="300rm">
 
 To train the network with CIFAR-10:
 
