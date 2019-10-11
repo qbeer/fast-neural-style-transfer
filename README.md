@@ -5,7 +5,7 @@
 
 Current status :
 
-<img src="./reco.png" height="500rm">
+<img src="./data/reco.png" height="500rm">
 
 From style image:
 
