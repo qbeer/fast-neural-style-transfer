@@ -61,4 +61,4 @@ resized_image_dataset = parsed_image_dataset.map(_resize_image_function)
 
 train = resized_image_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
 
-trainer.train(train, lr=1e-3, epochs=2)
+trainer.train(train, lr=1e-3, epochs=1)
