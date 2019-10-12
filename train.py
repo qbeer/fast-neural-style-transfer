@@ -19,10 +19,10 @@ from src import ModelTrainer
 
 BUFFER_SIZE = 5000
 BATCH_SIZE = 4
-WIDTH = 256
-HEIGHT = 168
+WIDTH = 8 * 48
+HEIGHT = 8 * 32
 
-style_image = plt.imread('./style_images/van_gogh.jpg')
+style_image = plt.imread('./style_images/colorful_portrait.jpg')
 style_image = tf.Variable(style_image, name='style_image')
 style_image = tf.expand_dims(style_image, 0)
 style_image = tf.image.resize_images(style_image, size=(WIDTH, HEIGHT))
