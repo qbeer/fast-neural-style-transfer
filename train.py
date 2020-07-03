@@ -1,64 +1,49 @@
 # Tensorflow throws a bunch of `FutureWarning`s
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-
-import tensorflow as tf
-tf.enable_eager_execution()
-import pathlib
 import glob
-import numpy as np
-
-import matplotlib.pyplot as plt
-
+import pathlib
+import warnings
+from datetime import datetime
 from multiprocessing import Pool
 
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+
+import tensorflow_datasets as tfds
 from src import ModelTrainer
+
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+logdir = "logs/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+file_writer = tf.summary.create_file_writer(logdir + "/metrics")
+file_writer.set_as_default()
 
 BUFFER_SIZE = 5000
 BATCH_SIZE = 4
-WIDTH = 8 * 48
-HEIGHT = 8 * 32
+WIDTH = 160
+HEIGHT = 320
 
 style_image = plt.imread('./style_images/colorful_portrait.jpg')
-style_image = tf.Variable(style_image, name='style_image')
+style_image = tf.keras.applications.vgg16.preprocess_input(style_image)
+style_image = tf.constant(style_image, name='style_image')
 style_image = tf.expand_dims(style_image, 0)
-style_image = tf.image.resize_images(style_image, size=(WIDTH, HEIGHT))
+style_image = tf.image.resize(style_image, size=(WIDTH, HEIGHT))
 
 trainer = ModelTrainer(style_image,
                        residual=True,
                        input_shape=(WIDTH, HEIGHT, 3),
-                       n_classes=3,
+                       c_out=3,
                        batch_size=BATCH_SIZE)
 
-raw_image_dataset = tf.data.TFRecordDataset('celeba.tfrecords')
-
-image_feature_description = {
-    'height': tf.io.FixedLenFeature([], tf.int64),
-    'width': tf.io.FixedLenFeature([], tf.int64),
-    'image': tf.io.FixedLenFeature([], tf.string),
-}
+dataset = tfds.load('imagenette', split='train', batch_size=BATCH_SIZE)
 
 
-def _parse_image_function(example_proto):
-    return tf.io.parse_single_example(example_proto, image_feature_description)
-
-
-def _resize_image_function(example_parsed):
-    image = tf.image.decode_jpeg(example_parsed['image'])
-    image = tf.cast(image, tf.float32)
-    height = tf.cast(example_parsed['height'], tf.int32)
-    width = tf.cast(example_parsed['width'], tf.int32)
-
-    image = tf.reshape(image, [height, width, 3])
+def preproc_image_mapper(example):
+    image = tf.cast(example['image'], tf.float32)
+    image = tf.keras.applications.vgg16.preprocess_input(image)
     return tf.image.resize(image, size=(WIDTH, HEIGHT))
 
 
-parsed_image_dataset = raw_image_dataset.map(_parse_image_function)
-resized_image_dataset = parsed_image_dataset.map(_resize_image_function)
+dataset = dataset.map(preproc_image_mapper).cache()
 
-train = resized_image_dataset.shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
-
-trainer.train(train, lr=1e-3, epochs=1)
+trainer.train(dataset, lr=1e-3, epochs=1)

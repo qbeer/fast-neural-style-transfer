@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_addons as tfa
 from .reflection_pad_layer import ReflectionPadding2D
 
 
@@ -22,13 +23,16 @@ class ConvolutionalBlock(tf.keras.Model):
         self.upsample_layer = tf.keras.layers.UpSampling2D(
             size=(2, 2), interpolation='bilinear')
 
-    def call(self, x):
+        if self.normalize:
+            self.instance_norm = tfa.layers.InstanceNormalization()
+
+    def __call__(self, x, training=True):
         if self.upsample:
             x = self.upsample_layer(x)
         x = self.reflection_pad(x)
         x = self.conv(x)
         if self.normalize:
-            x = tf.contrib.layers.instance_norm(x)
+            x = self.instance_norm(x, training=training)
         if self.relu:
             x = tf.nn.relu(x)
         return x

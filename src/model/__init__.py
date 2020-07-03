@@ -1,2 +1,0 @@
-from .model import StyleTransferModel
-from .residual_model import ResidualStyleTransferModel

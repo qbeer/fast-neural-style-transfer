@@ -2,9 +2,9 @@ import tensorflow as tf
 
 
 class InferenceNetwork(tf.keras.Model):
-    def __init__(self, n_classes=3):
+    def __init__(self, c_out=3):
         super(InferenceNetwork, self).__init__()
-        self.n_classes = n_classes
+        self.c_out = c_out
         # eg.: 128 x 128 x 3
         self.down_conv_1 = tf.keras.layers.Conv2D(filters=64,
                                                   kernel_size=(2, 2),
@@ -104,11 +104,11 @@ class InferenceNetwork(tf.keras.Model):
                                                            padding='valid',
                                                            activation='relu')
         # eg.: 129 x 129 x 64
-        self.reco = tf.keras.layers.Conv2D(filters=self.n_classes,
+        self.reco = tf.keras.layers.Conv2D(filters=self.c_out,
                                            kernel_size=(2, 2),
                                            padding='valid')
 
-    def call(self, x):
+    def __call__(self, x):
         x = self.down_conv_1(x)
         x = tf.contrib.layers.instance_norm(x)
         x1 = x

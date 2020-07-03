@@ -7,13 +7,13 @@ verify_ssl = true
 yapf = "*"
 
 [packages]
-tensorflow-gpu = "==1.14"
+tensorflow-gpu = "*"
 matplotlib = "*"
 pillow = "*"
 tensorflow-datasets = "*"
-h5py = "*"
 numpy = "*"
 scikit-image = "*"
+tensorflow-addons = "*"
 
 [requires]
 python_version = "3.6"

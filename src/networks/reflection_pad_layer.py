@@ -12,7 +12,7 @@ class ReflectionPadding2D(tf.keras.layers.Layer):
         return (s[0], s[1] + 2 * self.padding[0], s[2] + 2 * self.padding[1],
                 s[3])
 
-    def call(self, x, mask=None):
+    def __call__(self, x, mask=None):
         w_pad, h_pad = self.padding
         return tf.pad(x, [[0, 0], [h_pad, h_pad], [w_pad, w_pad], [0, 0]],
                       'REFLECT')

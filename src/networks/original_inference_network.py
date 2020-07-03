@@ -21,9 +21,8 @@ class ResidualInferenceNetwork(tf.keras.Model):
                                           kernel_size=9,
                                           normalize=False,
                                           relu=False)
-        self.output_scale = OutputScale()
 
-    def call(self, x):
+    def __call__(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
@@ -35,6 +34,4 @@ class ResidualInferenceNetwork(tf.keras.Model):
         x = self.upconv1(x)
         x = self.upconv2(x)
         x = self.upconv3(x)
-        x = tf.nn.tanh(x) # [-1, 1]
-        x = self.output_scale(x) # [0, 255] -> preproc after
         return x
