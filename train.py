@@ -25,7 +25,9 @@ def train(args):
     BATCH_SIZE = args.batch_size
     WIDTH = args.width
     HEIGHT = args.height
-    STYLE = './style_images/colorful_portrait.jpg' if not args.starry_night else './style_images/starry_night.png'
+    STYLE = './style_images/colorful_portrait.jpg' if not args.starry_night else './style_images/starry_night.jpg'
+
+    print(STYLE)
 
     style_image = plt.imread(STYLE)
     style_image = tf.keras.applications.vgg16.preprocess_input(style_image)
@@ -50,10 +52,18 @@ def train(args):
 
     trainer.train(dataset, lr=1e-3, epochs=args.epochs)
 
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--batch_size', type=int, default=4, required=False)
 parser.add_argument('--epochs', type=int, default=2, required=False)
 parser.add_argument('--width', type=int, default=320, required=False)
-parser.add_argument('--height', type=int, default=2, required=False)
-parser.add_argument('--starry_night', default=False, action='store_true', required=False)
+parser.add_argument('--height', type=int, default=160, required=False)
+parser.add_argument('--starry_night',
+                    default=False,
+                    action='store_true',
+                    required=False)
+
+args = parser.parse_args()
+
+train(args)

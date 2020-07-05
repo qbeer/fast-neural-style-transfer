@@ -24,9 +24,7 @@ class ModelTrainer:
     def _style_loss(self, loss):
         style_loss = self.transfer_model.loss_net(self.style_image)
 
-        STYLE_LAYERS = [
-            'block3_conv3', 'block2_conv2', 'block3_conv3', 'block4_conv3'
-        ]
+        STYLE_LAYERS = ['block3_conv3', 'block2_conv2', 'block3_conv']
         layer_weight = 1. / float(len(STYLE_LAYERS))
         style_final_loss = tf.cast(0., dtype=tf.float32)
         for loss_layer in STYLE_LAYERS:
@@ -40,7 +38,7 @@ class ModelTrainer:
         return style_final_loss
 
     def _content_loss(self, content_image, loss):
-        CONTENT_LAYER = 'block2_conv2'
+        CONTENT_LAYER = 'block4_conv2'
         content_loss = self.transfer_model.loss_net(content_image)
         bs, height, width, channels = content_loss[CONTENT_LAYER].get_shape(
         ).as_list()
@@ -110,4 +108,4 @@ class ModelTrainer:
                 _it += 1
 
                 if _it % 1000 == 0:
-       	            self.transfer_model.save_weights(f"model_{_it}.h5")
+                    self.transfer_model.save_weights(f"model_{_it}.h5")

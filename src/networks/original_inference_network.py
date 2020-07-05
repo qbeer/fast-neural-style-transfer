@@ -1,6 +1,7 @@
 import tensorflow as tf
 from .residual_block import ResidualBlock
 from .convolutional_block import ConvolutionalBlock
+from .output_scale_layer import OutputScale
 
 
 class ResidualInferenceNetwork(tf.keras.Model):
@@ -20,6 +21,7 @@ class ResidualInferenceNetwork(tf.keras.Model):
                                           kernel_size=9,
                                           normalize=False,
                                           relu=False)
+        self.scale = OutputScale()
 
     def call(self, x, training=True):
         x = self.conv1(x)
@@ -33,4 +35,6 @@ class ResidualInferenceNetwork(tf.keras.Model):
         x = self.upconv1(x)
         x = self.upconv2(x)
         x = self.upconv3(x)
+        x = tf.nn.tanh(x)
+        x = self.scale(x)
         return x
