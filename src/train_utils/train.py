@@ -109,4 +109,5 @@ class ModelTrainer:
 
                 _it += 1
 
-        self.transfer_model.save_weights("model.h5")
+                if _it % 1000 == 0:
+       	            self.transfer_model.save_weights(f"model_{_it}.h5")

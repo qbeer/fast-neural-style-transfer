@@ -7,7 +7,7 @@ class LossNetwork(tf.keras.Model):
         self.base_model = tf.keras.applications.vgg16.VGG16(
             include_top=False, weights='imagenet', input_shape=input_shape)
 
-    def __call__(self, x):
+    def call(self, x, training=True):
         outputs = {
             "block5_conv2": None,
             "block1_conv1": None,

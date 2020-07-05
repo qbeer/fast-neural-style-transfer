@@ -9,7 +9,7 @@ class TransferModel(tf.keras.Model):
         self.inference_net = ResidualInferenceNetwork()
         self.loss_net = LossNetwork(input_shape=input_sape)
 
-    def __call__(self, x):
-        reco = self.inference_net(x)
-        loss = self.loss_net(reco)
+    def call(self, x, training=True):
+        reco = self.inference_net(x, training)
+        loss = self.loss_net(reco, training)
         return reco, loss

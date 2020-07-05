@@ -26,7 +26,7 @@ class ConvolutionalBlock(tf.keras.Model):
         if self.normalize:
             self.instance_norm = tfa.layers.InstanceNormalization()
 
-    def __call__(self, x, training=True):
+    def call(self, x, training=True):
         if self.upsample:
             x = self.upsample_layer(x)
         x = self.reflection_pad(x)

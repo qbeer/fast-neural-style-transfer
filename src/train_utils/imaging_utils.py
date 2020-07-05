@@ -48,6 +48,6 @@ def image_grid(reco):
         plt.xticks([])
         plt.yticks([])
         plt.grid(False)
-        plt.imshow(deprocess_input(reco[i]), cmap=plt.cm.binary)
+        plt.imshow(deprocess_input(reco[i]))
 
     return figure
