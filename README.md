@@ -1,23 +1,42 @@
-# Fast neural style transfer (in developement)
+# Fast neural style transfer
 
 * With VGG16 loss head.
 * With UNET fully convolutional net for image generation.
 
-Current status :
+From style images:
 
-<img src="./data/reco.png" height="500rm">
+Van Gogh   | Picasso
+:---------:|:--------:
+<img src="./style_images/starry_night.jpg" height="200rm"> | <img src="./style_images/picasso.jpeg" height="300rm">
 
-From style image:
-
-<img src="./style_images/van_gogh.jpg" height="300rm">
-
-To train the network with CIFAR-10:
+To train the network with Imagenette:
 
 ```bash
 pipenv shell
 pipenv install
-pipenv run python train.py
+pipenv run python train.py --starry_night --width=<width_int> --height=<height-int>
 ```
+
+## Examples
+
+* Heidelberg
+
+Original   | Van Gogh  | Picasso
+:---------:|:---------:|:---------:
+<img src="./data/heidelberg.jpg" height="250rm" > | <img src="./data/heidelberg_styled_vg.png" height="250rm"> | <img src="./data/heidelberg_styled_pic.png" height="250rm">
+
+* Outside scene with friends
+
+Van Gogh | Picasso
+:-------:|:-------:
+[![mount-vesuvio](https://img.youtube.com/vi/ZjJtOnqJqIg/0.jpg)](https://www.youtube.com/watch?v=ZjJtOnqJqIg) | [![mount-vesuvio](https://img.youtube.com/vi/NzKcvEsIu4s/0.jpg)](https://www.youtube.com/watch?v=NzKcvEsIu4s)
+
+* Mount Vesuvio's inside
+
+Van Gogh | Picasso
+:-------:|:-------:
+[![outside-scene-with-friends](https://img.youtube.com/vi/xirnt_-sChI/0.jpg)](https://www.youtube.com/watch?v=xirnt_-sChI) | [![outside-scene-with-friends](https://img.youtube.com/vi/lfbySLIlNUk/0.jpg)](https://www.youtube.com/watch?v=lfbySLIlNUk)
+
 
 ### References
 

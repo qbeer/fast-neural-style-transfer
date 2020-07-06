@@ -1,4 +1,4 @@
-from ..networks import ResidualInferenceNetwork, LossNetwork, InferenceNetwork, TransferModel
+from ..networks import ResidualInferenceNetwork, LossNetwork, TransferModel
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,22 +9,17 @@ from .imaging_utils import image_grid, plot_to_image
 class ModelTrainer:
     def __init__(self,
                  style_image,
-                 residual=False,
                  batch_size=32,
                  c_out=3,
                  input_shape=(256, 256, 3)):
-        if residual:
-            self.transfer_model = TransferModel(input_sape=input_shape)
-        else:
-            self.transfer_model = InferenceNetwork(c_out=c_out)
-
+        self.transfer_model = TransferModel(input_sape=input_shape)
         self.batch_size = batch_size
         self.style_image = style_image
 
     def _style_loss(self, loss):
         style_loss = self.transfer_model.loss_net(self.style_image)
 
-        STYLE_LAYERS = ['block3_conv3', 'block2_conv2', 'block3_conv']
+        STYLE_LAYERS = ['block3_conv3', 'block2_conv2', 'block4_conv1']
         layer_weight = 1. / float(len(STYLE_LAYERS))
         style_final_loss = tf.cast(0., dtype=tf.float32)
         for loss_layer in STYLE_LAYERS:
@@ -78,7 +73,7 @@ class ModelTrainer:
 
         return reco, full_loss, style_loss, feature_loss, TV_loss
 
-    def train(self, images, lr=1e-2, epochs=1):
+    def train(self, images, lr, epochs=1):
         self.opt = tf.keras.optimizers.Adam(learning_rate=lr)
 
         _it = 0
@@ -107,5 +102,5 @@ class ModelTrainer:
 
                 _it += 1
 
-                if _it % 1000 == 0:
-                    self.transfer_model.save_weights(f"model_{_it}.h5")
+                if _it % 100 == 0:
+                    self.transfer_model.save_weights(f"model.h5")
