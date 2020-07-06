@@ -19,11 +19,13 @@ pipenv run python train.py --starry_night --width=<width_int> --height=<height-i
 
 ## Examples
 
-* Heidelberg
+* Heidelberg - images
 
 Original   | Van Gogh  | Picasso
 :---------:|:---------:|:---------:
 <img src="./data/heidelberg.jpg" height="250rm" > | <img src="./data/heidelberg_styled_vg.png" height="250rm"> | <img src="./data/heidelberg_styled_pic.png" height="250rm">
+
+### Videos
 
 * Outside scene with friends
 
